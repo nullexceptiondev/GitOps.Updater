@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "GitOps.Updater.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "image update"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker",
+      "commandLineArgs": "image update"
+    }
+  }
+}

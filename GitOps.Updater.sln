@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.34814.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitOps.Updater.Cli", "GitOps.Updater.Cli\GitOps.Updater.Cli.csproj", "{7D6BD8FB-2812-496F-8379-8A3661849515}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitOps.Updater.Tests", "GitOps.Updater.Tests\GitOps.Updater.Tests.csproj", "{705A74B9-7641-4501-9DDB-7EEA87769948}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spectre.Console.Cli.Extensions", "Spectre.Console.Cli.Extensions\Spectre.Console.Cli.Extensions.csproj", "{1E803E75-A3EE-491D-8267-4C11A903B889}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spectre.Console.Cli.Testing", "Spectre.Console.Cli.Testing\Spectre.Console.Cli.Testing.csproj", "{A5FB7CB2-BCAC-4F75-9449-B88B47E120F7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spectre.Console.Cli.Documentation", "Spectre.Console.Cli.Documentation\Spectre.Console.Cli.Documentation.csproj", "{371B5191-50CA-4E9A-A2D1-D297AE845E48}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7D6BD8FB-2812-496F-8379-8A3661849515}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D6BD8FB-2812-496F-8379-8A3661849515}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D6BD8FB-2812-496F-8379-8A3661849515}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D6BD8FB-2812-496F-8379-8A3661849515}.Release|Any CPU.Build.0 = Release|Any CPU
+		{705A74B9-7641-4501-9DDB-7EEA87769948}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{705A74B9-7641-4501-9DDB-7EEA87769948}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{705A74B9-7641-4501-9DDB-7EEA87769948}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{705A74B9-7641-4501-9DDB-7EEA87769948}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E803E75-A3EE-491D-8267-4C11A903B889}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E803E75-A3EE-491D-8267-4C11A903B889}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E803E75-A3EE-491D-8267-4C11A903B889}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E803E75-A3EE-491D-8267-4C11A903B889}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5FB7CB2-BCAC-4F75-9449-B88B47E120F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5FB7CB2-BCAC-4F75-9449-B88B47E120F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5FB7CB2-BCAC-4F75-9449-B88B47E120F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5FB7CB2-BCAC-4F75-9449-B88B47E120F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{371B5191-50CA-4E9A-A2D1-D297AE845E48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{371B5191-50CA-4E9A-A2D1-D297AE845E48}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{371B5191-50CA-4E9A-A2D1-D297AE845E48}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{371B5191-50CA-4E9A-A2D1-D297AE845E48}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0102220F-300B-42DD-A895-3568B7DC2D6A}
+	EndGlobalSection
+EndGlobal

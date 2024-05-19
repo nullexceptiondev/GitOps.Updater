@@ -1,0 +1,39 @@
+﻿<Model>
+  <!--IMAGE-->
+  <Command Name="image" IsBranch="true" Settings="Spectre.Console.Cli.CommandSettings">
+    <!--UPDATE-->
+    <Command Name="update" IsBranch="false" ClrType="GitOps.Updater.Cli.Commands.UpdateImageCommand"
+Settings="GitOps.Updater.Cli.Commands.UpdateImageCommand+Settings">
+      <Parameters>
+        <Option Short="f" Long="" Value="FILE" Required="false" Kind="scalar" ClrType="System.String" />
+        <Option Short="c" Long="create" Value="CREATE" Required="false" Kind="flag" ClrType="System.Boolean" />
+        <Option Short="" Long="default" Value="DEFAULTVALUESPATTERN" Required="false" Kind="scalar"
+ClrType="System.String" />
+        <Option Short="" Long="dryrun" Value="DRYRUN" Required="false" Kind="flag" ClrType="System.Boolean" />
+        <Option Short="" Long="gitbranch" Value="GITBRANCH" Required="false" Kind="scalar" ClrType="System.String" />
+        <Option Short="" Long="gitmessage" Value="GITMESSAGE" Required="false" Kind="scalar" ClrType="System.String" />
+        <Option Short="" Long="gitpat" Value="GITPAT" Required="false" Kind="scalar" ClrType="System.String" />
+        <Option Short="" Long="gitpatname" Value="GITPATNAME" Required="false" Kind="scalar" ClrType="System.String" />
+        <Option Short="" Long="gitprojectpath" Value="GITPROJECTPATH" Required="false" Kind="scalar"
+ClrType="System.String" />
+        <Option Short="" Long="gitserverhost" Value="GITSERVERHOST" Required="false" Kind="scalar"
+ClrType="System.String" />
+        <Option Short="" Long="gituseremail" Value="GITUSEREMAIL" Required="false" Kind="scalar" ClrType="System.String"
+/>
+        <Option Short="" Long="gitusername" Value="GITUSERNAME" Required="false" Kind="scalar" ClrType="System.String"
+/>
+        <Option Short="" Long="imageyaml" Value="IMAGEYAML" Required="false" Kind="scalar" ClrType="System.String">
+          <Description>Path to image version in values file</Description>
+        </Option>
+        <Option Short="" Long="template" Value="TEMPLATEPATTERN" Required="false" Kind="scalar" ClrType="System.String"
+/>
+        <Option Short="" Long="templateyaml" Value="TEMPLATEYAML" Required="false" Kind="scalar"
+ClrType="System.String">
+          <Description>Path to template version in values file</Description>
+        </Option>
+        <Option Short="" Long="values" Value="VALUESPATTERN" Required="false" Kind="scalar" ClrType="System.String" />
+        <Option Short="v" Long="version" Value="VERSION" Required="false" Kind="scalar" ClrType="System.String" />
+      </Parameters>
+    </Command>
+  </Command>
+</Model>

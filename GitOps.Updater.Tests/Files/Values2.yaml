@@ -1,0 +1,4 @@
+﻿tenant:
+  name: tenant1
+  manifest_version: 1.0.0
+  image_version: 1.0.0.1-dev

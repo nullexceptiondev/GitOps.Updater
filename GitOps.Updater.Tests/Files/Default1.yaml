@@ -1,0 +1,3 @@
+﻿image: 1.0.0.0-dev
+child:
+  image2: 1.0.0.0-prod 
