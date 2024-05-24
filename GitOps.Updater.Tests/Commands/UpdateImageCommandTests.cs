@@ -155,31 +155,6 @@ namespace GitOps.Updater.Tests.Commands
             result.Output.Should().Contain($"Error: Values file pattern requires a separator between version segments");
         }
 
-        //[Fact]
-        //public void Execute()
-        //{
-        //    _gitClient.WorkingDirectory = _fileSystem.Directory.CreateTempSubdirectory().FullName;
-
-        //    var tenantFile = "/files/tenants.csv";
-        //    _fileSystem.AddFile(tenantFile, new MockFileData("dev,tenant1,1.0.*.0"));
-
-        //    //_fileSystem.AddDirectory(_fileSystem.Path.Combine(_gitClient.WorkingDirectory, "/helm-deployments/helm-101/dev"));
-        //    var dir = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.0/dev/tenant1/values-tenant1.yaml");
-        //    _fileSystem.AddFile(dir, new MockFileData(""));
-
-        //    var argBuilder = UpdateImageArgBuilder.Create();
-        //    argBuilder.AddTenantFile(tenantFile);
-        //    argBuilder.AddVersion("1.0.0.0");
-        //    argBuilder.AddTemplateDirectoryPattern("helm-deployments/helm-{vX.X.X}");
-        //    argBuilder.AddValuesFilePattern("helm-deployments/helm-{vX.X.X}/{environment}/{tenant}/values-{tenant}.yaml");
-        //    argBuilder.AddGit();
-        //    var args = argBuilder.Build();
-
-        //    var result = Factory.CommandAppTester.Run(args);
-
-        //    result.ExitCode.Should().Be(-1);
-        //}
-
         [Fact]
         public async Task Execute_HelmNested_RequiresMove()
         {
@@ -190,7 +165,6 @@ namespace GitOps.Updater.Tests.Commands
             var tenantFile = "/files/tenants.csv";
             _fileSystem.AddFile(tenantFile, new MockFileData("dev,tenant1,1.0.1.0"));
 
-            //_fileSystem.AddDirectory(_fileSystem.Path.Combine(_gitClient.WorkingDirectory, "/helm-deployments/helm-101/dev"));
             var tenant1Values100 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.0/dev/tenant1/values-tenant1.yaml");
             var dir101 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.1");
             var default101 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.1/default.yaml");
@@ -279,14 +253,12 @@ namespace GitOps.Updater.Tests.Commands
             var defaultFile101 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.1/default.yaml");
             _fileSystem.AddFileFromEmbeddedResource(valuesFile01, Assembly.GetExecutingAssembly(), "GitOps.Updater.Tests.Files.Values2.yaml");
             _fileSystem.AddDirectory(dir101);
-            //_fileSystem.AddFileFromEmbeddedResource(defaultFile101, Assembly.GetExecutingAssembly(), "GitOps.Updater.Tests.Files.Default1.yaml");
 
             var argBuilder = Create();
             argBuilder.AddTenantFile(tenantFile);
             argBuilder.AddVersion("1.0.1.0-dev");
             argBuilder.AddTemplateDirectoryPattern("helm-deployments/helm-{vX.X.X}");
             argBuilder.AddValuesFilePattern("environments/{environment}/{tenant}/values.yaml");
-            //argBuilder.AddDefaultValuesFilePattern("helm-deployments/helm-{vX.X.X}/default.yaml");
             argBuilder.AddImageYamlPath(imageYamlPath);
             argBuilder.AddTemplateYamlPath(templateYamlPath);
             argBuilder.AddGit();
@@ -346,6 +318,44 @@ namespace GitOps.Updater.Tests.Commands
             var imageValue = YamlHelper.QueryYaml(yamlValuesFile, imageYamlPath);
 
             imageValue.Should().Be("1.0.1.0");
+        }
+
+        [Fact]
+        public void Execute_HelmSeparate_IgnoreCreate()
+        {
+            var imageYamlPath = "/child/image2";
+
+            _gitClient.WorkingDirectory = _fileSystem.Directory.CreateTempSubdirectory().FullName;
+
+            var tenantFile = "/files/tenants.csv";
+            _fileSystem.AddFile(tenantFile, new MockFileData("dev,tenant1,1.0.*.0"));
+
+            var valuesFile01 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"environments/dev/tenant1/values.yaml");
+            var dir101 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.1");
+            var defaultFile101 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.1/default.yaml");
+
+            _fileSystem.AddDirectory(dir101);
+            _fileSystem.AddFileFromEmbeddedResource(defaultFile101, Assembly.GetExecutingAssembly(), "GitOps.Updater.Tests.Files.Default1.yaml");
+
+            var argBuilder = Create();
+            argBuilder.AddTenantFile(tenantFile);
+            argBuilder.AddVersion("1.0.1.0");
+            argBuilder.AddTemplateDirectoryPattern("helm-deployments/helm-{vX.X.X}");
+            argBuilder.AddValuesFilePattern("environments/{environment}/{tenant}/values.yaml");
+            argBuilder.AddDefaultValuesFilePattern("helm-deployments/helm-{vX.X.X}/default.yaml");
+            argBuilder.AddImageYamlPath(imageYamlPath);
+            argBuilder.AddGit();
+            var args = argBuilder.Build();
+
+            _fileSystem.File.Exists(valuesFile01).Should().BeFalse();
+
+            var result = Factory.CommandAppTester.Run(args);
+
+            result.ExitCode.Should().Be(0);
+
+            _fileSystem.File.Exists(valuesFile01).Should().BeFalse();
+
+            result.Output.Should().Contain("Unable to find any values file");
         }
 
         [Fact]
@@ -435,7 +445,7 @@ namespace GitOps.Updater.Tests.Commands
         }
 
         [Fact]
-        public void Execute_CloneRepo_Failed()
+        public void Execute_Git_CloneRepo_Failed()
         {
             var argBuilder = Create();
             argBuilder.AddTenantFile("test.txt");
@@ -452,19 +462,34 @@ namespace GitOps.Updater.Tests.Commands
 
             result.ExitCode.Should().Be(1);
 
-            //result.Output.Should().Contain("");
+            result.Output.Should().Contain("Clone failed");
         }
 
         [Fact]
-        public void Execute_PushFiles_Failed()
+        public void Execute_Git_PushFiles_Failed()
         {
+            var imageYamlPath = "/child/image2";
+
+            _gitClient.WorkingDirectory = _fileSystem.Directory.CreateTempSubdirectory().FullName;
+
+            var tenantFile = "/files/tenants.csv";
+            _fileSystem.AddFile(tenantFile, new MockFileData("dev,tenant1,1.0.1.0"));
+
+            var tenant1Values100 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.0/dev/tenant1/values-tenant1.yaml");
+            var dir101 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.1");
+            var default101 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.1/default.yaml");
+
+            _fileSystem.AddFileFromEmbeddedResource(tenant1Values100, Assembly.GetExecutingAssembly(), "GitOps.Updater.Tests.Files.Values1.yaml");
+            _fileSystem.AddDirectory(dir101);
+            _fileSystem.AddFileFromEmbeddedResource(default101, Assembly.GetExecutingAssembly(), "GitOps.Updater.Tests.Files.Default1.yaml");
+
             var argBuilder = Create();
-            argBuilder.AddTenantFile("test.txt");
+            argBuilder.AddTenantFile(tenantFile);
             argBuilder.AddVersion("1.0.1.0");
             argBuilder.AddTemplateDirectoryPattern("helm-deployments/helm-{vX.X.X}");
             argBuilder.AddValuesFilePattern("helm-deployments/helm-{vX.X.X}/{environment}/{tenant}/values-{tenant}.yaml");
             argBuilder.AddDefaultValuesFilePattern("helm-deployments/helm-{vX.X.X}/default.yaml");
-            argBuilder.AddImageYamlPath("/child/image2");
+            argBuilder.AddImageYamlPath(imageYamlPath);
             argBuilder.AddGit();
             var args = argBuilder.Build();
 
@@ -472,12 +497,8 @@ namespace GitOps.Updater.Tests.Commands
             var result = Factory.CommandAppTester.Run(args);
 
             result.ExitCode.Should().Be(1);
-
-            var settings = new UpdateImageCommand.Settings();
-
-            //result.Output.Should().Contain("");
+            result.Output.Should().Contain("Push failed");
         }
-
 
         [Fact]
         public async Task Execute_HelmNested_RequiresCreate()
@@ -562,8 +583,7 @@ namespace GitOps.Updater.Tests.Commands
             //Unable to find any values file for dev - tenant1
             //No files have been modified
 
-            result.Output.Should().Contain("Unable to find any values file for dev - tenant1");
-            result.Output.Should().Contain("No files have been modified");
+            result.Output.Should().Contain("Unable to find any values file");
 
             _fileSystem.File.Exists(tenant1Values101).Should().BeFalse();
         }
@@ -597,8 +617,7 @@ namespace GitOps.Updater.Tests.Commands
 
             result.ExitCode.Should().Be(0);
 
-            result.Output.Should().Contain("Unable to update dev - tenant1 due to rule '1.0.*.0'");
-            result.Output.Should().Contain("No files have been modified");
+            result.Output.Should().Contain("Rule violation '1.0.*.0'");
         }
 
         [Fact]

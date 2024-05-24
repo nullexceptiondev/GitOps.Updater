@@ -1,6 +1,5 @@
 ﻿using GitOps.Updater.Cli.Infrastructure;
 using FluentAssertions;
-using LibGit2Sharp;
 using System.IO.Abstractions;
 
 namespace GitOps.Updater.Tests.Infrastructure

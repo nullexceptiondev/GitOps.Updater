@@ -98,7 +98,7 @@ namespace GitOps.Updater.Cli.Infrastructure
                     AnsiConsole.WriteLine($"Unable to get config setting '{setting}");
                     AnsiConsole.WriteLine(stdOutBuffer.ToString());
 
-                    throw new Exception();
+                    throw new GitClientException(errorText);
                 }
                 return string.Empty;
             }

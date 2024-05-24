@@ -8,7 +8,7 @@ using System.IO.Abstractions;
 using YamlDotNet.RepresentationModel;
 using gfs.YamlDotNet.YamlPath;
 using GitOps.Updater.Cli.Infrastructure;
-using GitOps.Updater.Cli.Helpers;
+using GitOps.Updater.Cli.Extensions;
 
 namespace GitOps.Updater.Cli.Commands;
 
@@ -147,13 +147,13 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
             var cloneResult = await CloneRepo(settings);
             if (!cloneResult) throw new GitClientException("Clone failed");
 
-            var gitModifications = await UpdateEnvironmentTenantValuesFiles(gitRepoPath, settings);
+            var valuesFileModifications = await UpdateEnvironmentTenantValuesFiles(gitRepoPath, settings);
 
-            if (gitModifications.Any())
+            if (valuesFileModifications.Length > 0)
             {
                 if (!settings.DryRun)
                 {
-                    var gitFileNames = gitModifications.Select(f => f.FileName).ToArray();
+                    var gitFileNames = valuesFileModifications.Select(f => f.FileName).ToArray();
                     var pushResult = await PushFilesToRepo(settings, gitMessage, gitFileNames);
                     if (!pushResult) throw new GitClientException("Push failed");
                 }
@@ -163,18 +163,25 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                 }
 
                 // log changes to console
-                foreach (var gitFile in gitModifications)
+                foreach (var valuesFileModification in valuesFileModifications)
                 {
-                    AnsiConsole.WriteLine($"{gitFile.FileName} - {gitFile.Action} - {gitFile.Log}");
+                    AnsiConsole.WriteLine($"--- {valuesFileModification.Environment} - {valuesFileModification.Tenant} ---");
+
+                    var action = valuesFileModification.Action.ToFlagString();
+                    var fileName = !string.IsNullOrEmpty(valuesFileModification.FileName) ? valuesFileModification.FileName : "Not Specified";
+
+                    AnsiConsole.WriteLine($"{action} - {fileName} - {valuesFileModification.Message}");
+                    AnsiConsole.WriteLine("------");
                 }
             }
             else
             {
-                AnsiConsole.WriteLine("No files have been modified");
+                AnsiConsole.WriteLine("No modifications to report");
             }
         }
-        catch
+        catch(Exception ex)
         {
+            AnsiConsole.WriteLine(ex.Message);
             return 1;
         }
         finally
@@ -195,9 +202,9 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
         return cloneResult;
     }
 
-    private async Task<ModifiedFile[]> UpdateEnvironmentTenantValuesFiles(string repoPath, Settings settings)
+    private async Task<TenantValuesFileModification[]> UpdateEnvironmentTenantValuesFiles(string repoPath, Settings settings)
     {
-        var modifiedFiles = new List<ModifiedFile>();
+        var modifiedFiles = new List<TenantValuesFileModification>();
         var fileLines = _fileSystem.File.ReadAllLines(settings.TenantFile);
         foreach (var line in fileLines)
         {
@@ -207,20 +214,23 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                 var environmentName = lineSplit[0];
                 var tenantName = lineSplit[1];
                 var versionRule = lineSplit[2];
+                var message = "";
+                var action = ValuesFileAction.None;
+                var tenantValuesFile = "";
 
-                if (VersionHelper.AllowUpdate(versionRule, settings.Version, out var versionNumber, out var versionTag))
+                if (VersionHelper.VersionRuleMatch(versionRule, settings.Version, out var versionNumber, out var versionTag))
                 {
-                    var tenantValuesFile = FindEnvironmentTenantValuesFile(repoPath,
-                                                                           settings.TemplateDirectoryPattern,
-                                                                           settings.ValuesFilePattern,
-                                                                           environmentName,
-                                                                           tenantName,
-                                                                           versionNumber,
-                                                                           settings.CreateIfMissing,
-                                                                           out var requiresCreate,
-                                                                           out var requiresMove,
-                                                                           out var requiresMigration,
-                                                                           out var expectedFileName);
+                    tenantValuesFile = FindEnvironmentTenantValuesFile(repoPath,
+                                                                       settings.TemplateDirectoryPattern,
+                                                                       settings.ValuesFilePattern,
+                                                                       environmentName,
+                                                                       tenantName,
+                                                                       versionNumber,
+                                                                       settings.CreateIfMissing,
+                                                                       out var requiresCreate,
+                                                                       out var requiresMove,
+                                                                       out var requiresMigration,
+                                                                       out var expectedFileName);
 
                     if (!string.IsNullOrEmpty(tenantValuesFile))
                     {
@@ -265,23 +275,23 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                         //update image tag
                         var updateResult = await UpdateValuesFile(tenantValuesFile, settings);
 
-                        var action = updateResult.Successful ? "Modified" : "Error";
-                        var message = updateResult.Successful ? $"Migrated from '{updateResult.PreviousImageValue}' to '{settings.Version}'" : updateResult.Message;
+                        action = updateResult.Successful ? ValuesFileAction.Modified : ValuesFileAction.Errored;
+                        message = updateResult.Successful ? $"Migrated from '{updateResult.PreviousImageValue}' to '{settings.Version}'" : updateResult.Message;
 
-                        if (requiresCreate) action = "Created";
-                        if (requiresMove) action = "Moved";
-
-                        modifiedFiles.Add(new ModifiedFile(tenantValuesFile, action, message));
+                        if (requiresCreate) action |= ValuesFileAction.Created;
+                        if (requiresMove) action |= ValuesFileAction.Moved;
                     }
                     else
                     {
-                        AnsiConsole.WriteLine($"Unable to find any values file for {environmentName} - {tenantName}");
+                        message = $"Unable to find any values file";
                     }
                 }
                 else
                 {
-                    AnsiConsole.WriteLine($"Unable to update {environmentName} - {tenantName} due to rule '{versionRule}'");
+                    message = $"Rule violation '{versionRule}'";
                 }
+                
+                modifiedFiles.Add(new TenantValuesFileModification(environmentName, tenantName, action, tenantValuesFile, message));
             }
         }
 
@@ -491,7 +501,17 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
         return false;
     }
 
-    public record ModifiedFile(string FileName, string Action, string Log);
+    public record TenantValuesFileModification(string Environment, string Tenant, ValuesFileAction Action, string FileName, string Message);
 
     public record ValuesFileModification(bool Successful, string? PreviousImageValue, string? PreviousTemplateValue, string Message);
+
+    [Flags]
+    public enum ValuesFileAction
+    {
+        None = 0,
+        Created = 1,
+        Moved = 2,
+        Modified = 4,
+        Errored = 8
+    }
 }

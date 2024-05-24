@@ -52,7 +52,7 @@ namespace GitOps.Updater.Cli.Helpers
             return (versionNumber, versionTag);
         }
 
-        internal static bool AllowUpdate(string versionRule, string version, out string versionNumber, out string versionTag)
+        internal static bool VersionRuleMatch(string versionRule, string version, out string versionNumber, out string versionTag)
         {
             var versionSplit = SplitVersion(version);
             versionNumber = versionSplit.VersionNumber;
