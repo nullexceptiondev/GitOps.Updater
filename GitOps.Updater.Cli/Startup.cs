@@ -1,8 +1,8 @@
 ﻿using Spectre.Console.Cli;
 using Spectre.Console.Cli.Extensions;
 using System.IO.Abstractions;
-using GitOps.Updater.Cli.Commands;
 using GitOps.Updater.Cli.Infrastructure;
+using GitOps.Updater.Cli.Commands;
 
 namespace GitOps.Updater.Cli
 {

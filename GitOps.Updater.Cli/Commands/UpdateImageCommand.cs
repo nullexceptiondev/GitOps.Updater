@@ -7,8 +7,8 @@ using System.Data;
 using System.IO.Abstractions;
 using YamlDotNet.RepresentationModel;
 using gfs.YamlDotNet.YamlPath;
-using GitOps.Updater.Cli.Infrastructure;
 using GitOps.Updater.Cli.Extensions;
+using GitOps.Updater.Cli.Infrastructure;
 
 namespace GitOps.Updater.Cli.Commands;
 
@@ -179,7 +179,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                 AnsiConsole.WriteLine("No modifications to report");
             }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             AnsiConsole.WriteLine(ex.Message);
             return 1;
@@ -209,7 +209,8 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
         foreach (var line in fileLines)
         {
             var lineSplit = line.Split(',');
-            if (lineSplit.Length == 3)
+            var fieldCount = lineSplit.Length;
+            if (fieldCount >= 3)
             {
                 var environmentName = lineSplit[0];
                 var tenantName = lineSplit[1];
@@ -217,6 +218,13 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                 var message = "";
                 var action = ValuesFileAction.None;
                 var tenantValuesFile = "";
+                var allowDowngrade = false;
+
+                // Skip the line if commented out
+                if (environmentName.Trim().StartsWith('#')) continue;
+
+                if (lineSplit.Length > 3 && !string.IsNullOrWhiteSpace(lineSplit[3]))
+                    bool.TryParse(lineSplit[3], out allowDowngrade);
 
                 if (VersionHelper.VersionRuleMatch(versionRule, settings.Version, out var versionNumber, out var versionTag))
                 {
@@ -273,7 +281,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                         }
 
                         //update image tag
-                        var updateResult = await UpdateValuesFile(tenantValuesFile, settings);
+                        var updateResult = await UpdateValuesFile(tenantValuesFile, allowDowngrade, settings);
 
                         action = updateResult.Successful ? ValuesFileAction.Modified : ValuesFileAction.Errored;
                         message = updateResult.Successful ? $"Migrated from '{updateResult.PreviousImageValue}' to '{settings.Version}'" : updateResult.Message;
@@ -290,7 +298,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                 {
                     message = $"Rule violation '{versionRule}'";
                 }
-                
+
                 modifiedFiles.Add(new TenantValuesFileModification(environmentName, tenantName, action, tenantValuesFile, message));
             }
         }
@@ -298,7 +306,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
         return [.. modifiedFiles];
     }
 
-    private async Task<ValuesFileModification> UpdateValuesFile(string valuesFileName, Settings settings)
+    private async Task<ValuesFileModification> UpdateValuesFile(string valuesFileName, bool allowDowngrade, Settings settings)
     {
         var successful = false;
         var previousImageValue = "";
@@ -308,7 +316,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
         {
             var tenantValuesFileContents = await _fileSystem.File.ReadAllTextAsync(valuesFileName);
 
-            if (string.IsNullOrEmpty(tenantValuesFileContents)) throw new Exception("Values file is empty");
+            if (string.IsNullOrEmpty(tenantValuesFileContents)) throw new EmptyFileException("Values file is empty");
 
             var yaml = new YamlStream();
             yaml.Load(new StringReader(tenantValuesFileContents));
@@ -326,7 +334,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                 var newVersionDetails = VersionHelper.SplitVersion(settings.Version);
                 var newVersion = Version.Parse(newVersionDetails.VersionNumber);
 
-                if (newVersion > currentVersion)
+                if (newVersion > currentVersion || allowDowngrade)
                 {
                     imageScalarNode.Value = settings.Version;
 
@@ -355,6 +363,14 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
 
                     successful = true;
                 }
+                else
+                {
+                    message = "Unable to downgrade";
+                }
+            }
+            else
+            {
+                message = $"Unable to find yaml node from path '{settings.ImageYamlPath}'";
             }
         }
         catch (Exception ex)

@@ -12,7 +12,7 @@ namespace GitOps.Updater.Tests.Helpers
             var overrideYaml = "";
             var resultYaml = YamlHelper.MergeYaml(baseYaml, overrideYaml);
 
-            resultYaml.Should().Be("image: 1.0.0.0-dev\r\ncount: 0\r\n");
+            resultYaml.Should().Be("image: 1.0.0.0-dev\r\ncount: 0\r\n".ReplaceLineEndings());
         }
 
         [Fact]
@@ -22,7 +22,7 @@ namespace GitOps.Updater.Tests.Helpers
             var overrideYaml = "image: 1.0.0.0-dev\r\ncount: 0";
             var resultYaml = YamlHelper.MergeYaml(baseYaml, overrideYaml);
 
-            resultYaml.Should().Be("image: 1.0.0.0-dev\r\ncount: 0\r\n");
+            resultYaml.Should().Be("image: 1.0.0.0-dev\r\ncount: 0\r\n".ReplaceLineEndings());
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace GitOps.Updater.Tests.Helpers
             var overrideYaml = "image: 1.0.0.1-dev\r\ncount: 1\r\nchild:\r\n  count2: 2";
             var resultYaml = YamlHelper.MergeYaml(baseYaml, overrideYaml);
 
-            resultYaml.Should().Be("image: 1.0.0.1-dev\r\ncount: 1\r\nchild:\r\n  count2: 2\r\n  count3: 0\r\n");
+            resultYaml.Should().Be("image: 1.0.0.1-dev\r\ncount: 1\r\nchild:\r\n  count2: 2\r\n  count3: 0\r\n".ReplaceLineEndings());
         }
     }
 }

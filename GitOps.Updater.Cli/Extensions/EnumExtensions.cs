@@ -7,7 +7,7 @@
             if (!typeof(T).IsEnum)
                 throw new ArgumentException("Only supported for enum types.");
 
-            return string.Join("& ", Enum.GetValues(typeof(T))
+            return string.Join(" & ", Enum.GetValues(typeof(T))
                 .Cast<T>()
                 .Where(v => value.HasFlag(v)));
         }

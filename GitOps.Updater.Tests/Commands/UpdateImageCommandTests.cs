@@ -238,6 +238,45 @@ namespace GitOps.Updater.Tests.Commands
         }
 
         [Fact]
+        public async Task Execute_HelmSeparate_DowngradeError()
+        {
+            var imageYamlPath = "/image";
+
+            _gitClient.WorkingDirectory = _fileSystem.Directory.CreateTempSubdirectory().FullName;
+
+            var tenantFile = "/files/tenants.csv";
+            _fileSystem.AddFile(tenantFile, new MockFileData("dev,tenant1,1.0.*.0"));
+
+            var valuesFile01 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"environments/dev/tenant1/values.yaml");
+            var dir101 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.1");
+            var defaultFile101 = _fileSystem.Path.Combine(_gitClient.WorkingDirectory, @"helm-deployments/helm-1.0.1/default.yaml");
+            _fileSystem.AddFileFromEmbeddedResource(valuesFile01, Assembly.GetExecutingAssembly(), "GitOps.Updater.Tests.Files.Values3.yaml");
+            _fileSystem.AddDirectory(dir101);
+            _fileSystem.AddFileFromEmbeddedResource(defaultFile101, Assembly.GetExecutingAssembly(), "GitOps.Updater.Tests.Files.Default1.yaml");
+
+            var argBuilder = Create();
+            argBuilder.AddTenantFile(tenantFile);
+            argBuilder.AddVersion("1.0.1.0-dev");
+            argBuilder.AddTemplateDirectoryPattern("helm-deployments/helm-{vX.X.X}");
+            argBuilder.AddValuesFilePattern("environments/{environment}/{tenant}/values.yaml");
+            argBuilder.AddDefaultValuesFilePattern("helm-deployments/helm-{vX.X.X}/default.yaml");
+            argBuilder.AddImageYamlPath(imageYamlPath);
+            argBuilder.AddGit();
+            var args = argBuilder.Build();
+
+            var result = Factory.CommandAppTester.Run(args);
+
+            result.ExitCode.Should().Be(0);
+
+            _fileSystem.File.Exists(valuesFile01).Should().BeTrue();
+
+            var yamlValuesFile = await YamlHelper.ReadYamlFile(_fileSystem, valuesFile01);
+            var imageValue = YamlHelper.QueryYaml(yamlValuesFile, imageYamlPath);
+
+            imageValue.Should().Be("1.0.3.0-dev");
+        }
+
+        [Fact]
         public async Task Execute_HelmSeparate_WithTemplateYamlPath()
         {
             var imageYamlPath = "/tenant/image_version";
@@ -577,12 +616,6 @@ namespace GitOps.Updater.Tests.Commands
             var result = Factory.CommandAppTester.Run(args);
 
             result.ExitCode.Should().Be(0);
-
-            //Cloning Git Repository
-            //Finished Cloning Git Repository
-            //Unable to find any values file for dev - tenant1
-            //No files have been modified
-
             result.Output.Should().Contain("Unable to find any values file");
 
             _fileSystem.File.Exists(tenant1Values101).Should().BeFalse();
