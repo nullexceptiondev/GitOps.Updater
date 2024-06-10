@@ -197,7 +197,7 @@ namespace GitOps.Updater.Tests.Commands
 
             imageValue.Should().Be("1.0.1.0-prod");
             var settings = new VerifySettings();
-            settings.ScrubInlineDateTimeOffsets("o");
+            settings.ScrubInlineDateTimes("O");
             await Verify(result.Output, settings);
         }
 

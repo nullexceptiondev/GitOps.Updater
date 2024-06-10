@@ -2,7 +2,7 @@
 Finished Cloning Git Repository
 Pushing files to Git Repository
 Pushed files to Git Repository
-Message - GitOps Updater - 1.0.1.0-prod -
+Message - GitOps Updater - 1.0.1.0-prod - DateTime_1Z
 --- dev - tenant1 ---
 Moved & Modified - helm-deployments/helm-1.0.0/dev/tenant1/values-tenant1.yaml -> helm-deployments/helm-1.0.1/dev/tenant1/values-tenant1.yaml - Migrated from '1.0.0.0-prod' to '1.0.1.0-prod'
 ------
