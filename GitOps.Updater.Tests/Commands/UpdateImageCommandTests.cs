@@ -175,7 +175,7 @@ namespace GitOps.Updater.Tests.Commands
 
             var argBuilder = Create();
             argBuilder.AddTenantFile(tenantFile);
-            argBuilder.AddVersion("1.0.1.0");
+            argBuilder.AddVersion("1.0.1.0-prod");
             argBuilder.AddTemplateDirectoryPattern("helm-deployments/helm-{vX.X.X}");
             argBuilder.AddValuesFilePattern("helm-deployments/helm-{vX.X.X}/{environment}/{tenant}/values-{tenant}.yaml");
             argBuilder.AddDefaultValuesFilePattern("helm-deployments/helm-{vX.X.X}/default.yaml");
@@ -195,7 +195,10 @@ namespace GitOps.Updater.Tests.Commands
             var yamlValuesFile = await YamlHelper.ReadYamlFile(_fileSystem, tenant1Values101);
             var imageValue = YamlHelper.QueryYaml(yamlValuesFile, imageYamlPath);
 
-            imageValue.Should().Be("1.0.1.0");
+            imageValue.Should().Be("1.0.1.0-prod");
+            var settings = new VerifySettings();
+            settings.ScrubInlineDateTimeOffsets("o");
+            await Verify(result.Output, settings);
         }
 
         [Fact]

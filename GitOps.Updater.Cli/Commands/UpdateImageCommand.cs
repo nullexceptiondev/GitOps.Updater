@@ -141,7 +141,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
         try
         {
             var gitMessage = string.IsNullOrEmpty(settings.GitMessage) ?
-                $"GitOps Updater - {settings.Version} - {DateTime.UtcNow.ToString("O")}" :
+                $"GitOps Updater - {settings.Version} - {DateTime.UtcNow:O}" :
                 settings.GitMessage;
 
             var cloneResult = await CloneRepo(settings);
@@ -153,7 +153,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
             {
                 if (!settings.DryRun)
                 {
-                    var gitFileNames = valuesFileModifications.Select(f => f.FileName).ToArray();
+                    var gitFileNames = valuesFileModifications.Select(f => f.ToFileName).ToArray();
                     var pushResult = await PushFilesToRepo(settings, gitMessage, gitFileNames);
                     if (!pushResult) throw new GitClientException("Push failed");
                 }
@@ -162,13 +162,25 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                     AnsiConsole.WriteLine("Dry run results");
                 }
 
+                AnsiConsole.WriteLine($"Message - {gitMessage}");
+
                 // log changes to console
                 foreach (var valuesFileModification in valuesFileModifications)
                 {
                     AnsiConsole.WriteLine($"--- {valuesFileModification.Environment} - {valuesFileModification.Tenant} ---");
 
-                    var action = valuesFileModification.Action.ToFlagString();
-                    var fileName = !string.IsNullOrEmpty(valuesFileModification.FileName) ? valuesFileModification.FileName : "Not Specified";
+                    var action = valuesFileModification.Action.ToFlagString(ignoreZero: true);
+                    var fileName = "";
+                    if (valuesFileModification.Action.HasFlag(ValuesFileAction.Moved))
+                    {
+                        fileName = !string.IsNullOrEmpty(valuesFileModification.FromFileName) ? RemoveGitRepoPath(gitRepoPath, valuesFileModification.FromFileName) : "Not Specified";
+                        fileName += " -> ";
+                        fileName += !string.IsNullOrEmpty(valuesFileModification.ToFileName) ? RemoveGitRepoPath(gitRepoPath, valuesFileModification.ToFileName) : "Not Specified";
+                    }
+                    else
+                    {
+                        fileName = !string.IsNullOrEmpty(valuesFileModification.ToFileName) ? RemoveGitRepoPath(gitRepoPath, valuesFileModification.ToFileName) : "Not Specified";
+                    }
 
                     AnsiConsole.WriteLine($"{action} - {fileName} - {valuesFileModification.Message}");
                     AnsiConsole.WriteLine("------");
@@ -217,8 +229,11 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                 var versionRule = lineSplit[2];
                 var message = "";
                 var action = ValuesFileAction.None;
-                var tenantValuesFile = "";
+                //var tenantValuesFile = "";
                 var allowDowngrade = false;
+
+                var fromFileName = "";
+                var toFileName = "";
 
                 // Skip the line if commented out
                 if (environmentName.Trim().StartsWith('#')) continue;
@@ -228,7 +243,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
 
                 if (VersionHelper.VersionRuleMatch(versionRule, settings.Version, out var versionNumber, out var versionTag))
                 {
-                    tenantValuesFile = FindEnvironmentTenantValuesFile(repoPath,
+                    fromFileName = FindEnvironmentTenantValuesFile(repoPath,
                                                                        settings.TemplateDirectoryPattern,
                                                                        settings.ValuesFilePattern,
                                                                        environmentName,
@@ -238,25 +253,23 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                                                                        out var requiresCreate,
                                                                        out var requiresMove,
                                                                        out var requiresMigration,
-                                                                       out var expectedFileName);
+                                                                       out toFileName);
 
-                    if (!string.IsNullOrEmpty(tenantValuesFile))
+                    if (!string.IsNullOrEmpty(fromFileName))
                     {
-                        if (requiresMigration && !string.IsNullOrEmpty(expectedFileName))
+                        if (requiresMigration && !string.IsNullOrEmpty(toFileName))
                         {
-                            var expectedDirectory = _fileSystem.Path.GetDirectoryName(expectedFileName);
+                            var expectedDirectory = _fileSystem.Path.GetDirectoryName(toFileName);
                             if (!_fileSystem.Directory.Exists(expectedDirectory))
                                 _fileSystem.Directory.CreateDirectory(expectedDirectory!);
 
                             // move values file to correct helm folder
                             if (requiresMove)
-                                _fileSystem.File.Move(tenantValuesFile, expectedFileName);
+                                _fileSystem.File.Move(fromFileName, toFileName);
 
                             // create missing values file
                             if (requiresCreate)
-                                _fileSystem.File.Create(expectedFileName);
-
-                            tenantValuesFile = expectedFileName;
+                                _fileSystem.File.Create(toFileName);
 
                             if (!string.IsNullOrEmpty(settings.DefaultValuesFilePattern))
                             {
@@ -272,16 +285,16 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                                 if (_fileSystem.File.Exists(defaultValuesFile))
                                 {
                                     var defaultValuesFileContents = await _fileSystem.File.ReadAllTextAsync(defaultValuesFile);
-                                    var tenantValuesFileContents = await _fileSystem.File.ReadAllTextAsync(tenantValuesFile);
+                                    var tenantValuesFileContents = await _fileSystem.File.ReadAllTextAsync(toFileName);
 
                                     var mergedYaml = YamlHelper.MergeYaml(defaultValuesFileContents, tenantValuesFileContents);
-                                    await _fileSystem.File.WriteAllTextAsync(tenantValuesFile, mergedYaml);
+                                    await _fileSystem.File.WriteAllTextAsync(toFileName, mergedYaml);
                                 }
                             }
                         }
 
                         //update image tag
-                        var updateResult = await UpdateValuesFile(tenantValuesFile, allowDowngrade, settings);
+                        var updateResult = await UpdateValuesFile(toFileName, allowDowngrade, settings);
 
                         action = updateResult.Successful ? ValuesFileAction.Modified : ValuesFileAction.Errored;
                         message = updateResult.Successful ? $"Migrated from '{updateResult.PreviousImageValue}' to '{settings.Version}'" : updateResult.Message;
@@ -299,7 +312,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                     message = $"Rule violation '{versionRule}'";
                 }
 
-                modifiedFiles.Add(new TenantValuesFileModification(environmentName, tenantName, action, tenantValuesFile, message));
+                modifiedFiles.Add(new TenantValuesFileModification(environmentName, tenantName, action, fromFileName, toFileName, message));
             }
         }
 
@@ -404,14 +417,14 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                                                    out bool requiresCreate,
                                                    out bool requiresMove,
                                                    out bool requiresMigration,
-                                                   out string? expectedFileName)
+                                                   out string expectedFileName)
     {
         var versionNumberTracker = Version.Parse(versionNumber);
 
         requiresCreate = false;
         requiresMove = false;
         requiresMigration = false;
-        expectedFileName = null;
+        expectedFileName = string.Empty;
 
         var valuesVersionInfo = VersionHelper.GetVersionInfoFromPattern(valuesFilePattern, versionNumberTracker);
         var valuesFileFormatter = new StringFormatter(valuesFilePattern);
@@ -517,7 +530,16 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
         return false;
     }
 
-    public record TenantValuesFileModification(string Environment, string Tenant, ValuesFileAction Action, string FileName, string Message);
+    private string RemoveGitRepoPath(string gitRepoPath, string fileName)
+    {
+        var tempFileName = fileName.Replace(gitRepoPath, "");
+        if (tempFileName.StartsWithAny("\\", "/"))
+            tempFileName = tempFileName.Remove(0, 1);
+
+        return tempFileName;
+    }
+
+    public record TenantValuesFileModification(string Environment, string Tenant, ValuesFileAction Action, string FromFileName, string ToFileName, string Message);
 
     public record ValuesFileModification(bool Successful, string? PreviousImageValue, string? PreviousTemplateValue, string Message);
 
