@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DownMark" Version="0.1.0.151" />
+    <PackageReference Include="DownMark" Version="0.1.0.155" />
   </ItemGroup>
 
 </Project>
