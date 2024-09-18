@@ -17,24 +17,31 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
     public class Settings : CommandSettings
     {
         [CommandOption("-f <FILE>")]
+        [Description("Path to tenants csv file")]
         public string TenantFile { get; set; }
 
         [CommandOption("-v|--version <VERSION>")]
+        [Description("Version number")]
         public string Version { get; set; }
 
         [CommandOption("--template <TEMPLATEPATTERN>")]
+        [Description("Directory path to versioned template directory")]
         public string TemplateDirectoryPattern { get; set; }
 
         [CommandOption("--values <VALUESPATTERN>")]
+        [Description("File path to versioned tenants values file")]
         public string ValuesFilePattern { get; set; }
 
         [CommandOption("--default <DEFAULTVALUESPATTERN>")]
+        [Description("Default file path to values template file")]
         public string DefaultValuesFilePattern { get; set; }
 
         [CommandOption("-c|--create <CREATE>")]
+        [Description("Create tenant values file if missing?")]
         public bool CreateIfMissing { get; set; }
 
         [CommandOption("--dryrun <DRYRUN>")]
+        [Description("Perform a dry run?")]
         public bool DryRun { get; set; }
 
         [Description("Path to image version in values file")]
@@ -47,33 +54,41 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
 
         [CommandOption("--gitpatname <GITPATNAME>")]
         [EnvironmentVariable("GIT_PAT_NAME")]
+        [Description("")]
         public string GitPatName { get; set; }
 
         [CommandOption("--gitpat <GITPAT>")]
         [EnvironmentVariable("GIT_PAT")]
+        [Description("")]
         public string GitPat { get; set; }
 
         [CommandOption("--gitserverhost <GITSERVERHOST>")]
         [EnvironmentVariable("CI_SERVER_HOST")]
+        [Description("")]
         public string GitServerHost { get; set; }
 
         [CommandOption("--gitprojectpath <GITPROJECTPATH>")]
         [EnvironmentVariable("CI_PROJECT_PATH")]
+        [Description("")]
         public string GitProjectPath { get; set; }
 
         [CommandOption("--gitbranch <GITBRANCH>")]
         [EnvironmentVariable("CI_COMMIT_BRANCH")]
+        [Description("")]
         public string GitBranch { get; set; }
 
         [CommandOption("--gituseremail <GITUSEREMAIL>")]
         [EnvironmentVariable("GIT_USER_EMAIL")]
+        [Description("")]
         public string GitUserEmail { get; set; }
 
         [CommandOption("--gitusername <GITUSERNAME>")]
         [EnvironmentVariable("GIT_USER_NAME")]
+        [Description("")]
         public string GitUserName { get; set; }
 
         [CommandOption("--gitmessage <GITMESSAGE>")]
+        [Description("")]
         public string GitMessage { get; set; }
     }
 
@@ -139,9 +154,11 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
     {
         var gitRepoPath = _gitClient.CreateWorkingDirectory();
         try
-        {
+        {           
+
+            var logMessage = $"GitOps Updater - {settings.Version} - {DateTime.UtcNow:O}";
             var gitMessage = string.IsNullOrEmpty(settings.GitMessage) ?
-                $"GitOps Updater - {settings.Version} - {DateTime.UtcNow:O}" :
+                logMessage:
                 settings.GitMessage;
 
             var cloneResult = await CloneRepo(settings);

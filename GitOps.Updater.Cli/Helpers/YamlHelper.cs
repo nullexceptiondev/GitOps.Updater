@@ -77,7 +77,7 @@ namespace GitOps.Updater.Cli.Helpers
             return type == typeof(Dictionary<object, object>);
         }
 
-        public object ReadYaml(IParser parser, Type type)
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer objectDeserializer)
         {
             var nestedDeserializer = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -89,7 +89,7 @@ namespace GitOps.Updater.Cli.Helpers
         }
 
         [ExcludeFromCodeCoverage]
-        public void WriteYaml(IEmitter emitter, object value, Type type)
+        public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer objectSerializer)
         {
             throw new NotImplementedException();
         }

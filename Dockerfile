@@ -19,7 +19,8 @@ RUN dotnet build "./GitOps.Updater.Cli.csproj" -c $BUILD_CONFIGURATION -o /app/b
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./GitOps.Updater.Cli.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+ARG BUILD_VERSION=1.0.0
+RUN dotnet publish "./GitOps.Updater.Cli.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false /p:Version=$BUILD_VERSION
 
 FROM base AS final
 WORKDIR /app

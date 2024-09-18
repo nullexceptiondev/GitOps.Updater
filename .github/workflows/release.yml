@@ -31,3 +31,4 @@ jobs:
           push: true
           target: final
           tags: ${{ secrets.DOCKER_USERNAME }}/gitops-updater:${{ github.ref_name }}
+          build-args: BUILD_VERSION=${{ github.ref_name }}

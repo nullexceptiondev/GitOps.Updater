@@ -71,6 +71,7 @@ namespace Spectre.Console.Cli.Documentation
 
                 builder.Table(optionsTable);
             }
+
         }
     }
 }

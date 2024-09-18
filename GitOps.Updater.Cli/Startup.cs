@@ -3,6 +3,7 @@ using Spectre.Console.Cli.Extensions;
 using System.IO.Abstractions;
 using GitOps.Updater.Cli.Infrastructure;
 using GitOps.Updater.Cli.Commands;
+using System.Reflection;
 
 namespace GitOps.Updater.Cli
 {
@@ -10,9 +11,14 @@ namespace GitOps.Updater.Cli
     {
         public override IConfigurator ConfigureCommands(IConfigurator config)
         {
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            //config.SetApplicationName("GitOps Updater");
+            config.SetApplicationVersion(version.ToString());
             config.AddBranch("image", image =>
             {
-                image.AddCommand<UpdateImageCommand>("update");
+                image.AddCommand<UpdateImageCommand>("update")
+                     .WithDescription("Update image tags")
+                     .WithExample("image", "update", "-f", "c:\\file.csv");
             });
 
             return config;

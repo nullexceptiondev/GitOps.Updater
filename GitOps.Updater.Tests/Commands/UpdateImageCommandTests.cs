@@ -226,6 +226,8 @@ namespace GitOps.Updater.Tests.Commands
             argBuilder.AddDefaultValuesFilePattern("helm-deployments/helm-{vX.X.X}/default.yaml");
             argBuilder.AddImageYamlPath(imageYamlPath);
             argBuilder.AddGit();
+            argBuilder.AddGitMessage("test message");
+
             var args = argBuilder.Build();
 
             var result = Factory.CommandAppTester.Run(args);
@@ -238,6 +240,8 @@ namespace GitOps.Updater.Tests.Commands
             var imageValue = YamlHelper.QueryYaml(yamlValuesFile, imageYamlPath);
 
             imageValue.Should().Be("1.0.1.0");
+
+            result.Output.Should().Contain("Message - test message");
         }
 
         [Fact]
