@@ -11,5 +11,15 @@
                 .Cast<T>()
                 .Where(v => (!ignoreZero || Convert.ToInt32(v) != 0) && value.HasFlag(v)));
         }
+
+        public static bool HasAnyFlag<T>(this T value, params T[] flags) where T : Enum
+        {
+            foreach (var flag in flags)
+            {
+                if (value.HasFlag(flag)) return true;
+            }
+
+            return false;
+        }
     }
 }

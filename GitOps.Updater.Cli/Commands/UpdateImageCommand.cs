@@ -170,9 +170,13 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
             {
                 if (!settings.DryRun)
                 {
-                    var gitFileNames = valuesFileModifications.Select(f => f.ToFileName).ToArray();
-                    var pushResult = await PushFilesToRepo(settings, gitMessage, gitFileNames);
-                    if (!pushResult) throw new GitClientException("Push failed");
+                    if (valuesFileModifications.Any(v => v.Action.HasAnyFlag(ValuesFileAction.Created, ValuesFileAction.Moved, ValuesFileAction.Modified)))
+                    {
+                        //Not doing anything with the file names at the moment. We just stage any git changes (not sure if this is a good or bad idea)
+                        var gitFileNames = valuesFileModifications.Select(f => f.ToFileName).ToArray();
+                        var pushResult = await PushFilesToRepo(settings, gitMessage, gitFileNames);
+                        if (!pushResult) throw new GitClientException("Push failed");
+                    }
                 }
                 else
                 {
@@ -234,7 +238,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
     private async Task<TenantValuesFileModification[]> UpdateEnvironmentTenantValuesFiles(string repoPath, Settings settings)
     {
         var modifiedFiles = new List<TenantValuesFileModification>();
-        var fileLines = _fileSystem.File.ReadAllLines(settings.TenantFile);
+        var fileLines = await _fileSystem.File.ReadAllLinesAsync(settings.TenantFile);
         foreach (var line in fileLines)
         {
             var lineSplit = line.Split(',');
@@ -261,16 +265,16 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                 if (VersionHelper.VersionRuleMatch(versionRule, settings.Version, out var versionNumber, out var versionTag))
                 {
                     fromFileName = FindEnvironmentTenantValuesFile(repoPath,
-                                                                       settings.TemplateDirectoryPattern,
-                                                                       settings.ValuesFilePattern,
-                                                                       environmentName,
-                                                                       tenantName,
-                                                                       versionNumber,
-                                                                       settings.CreateIfMissing,
-                                                                       out var requiresCreate,
-                                                                       out var requiresMove,
-                                                                       out var requiresMigration,
-                                                                       out toFileName);
+                                                                    settings.TemplateDirectoryPattern,
+                                                                    settings.ValuesFilePattern,
+                                                                    environmentName,
+                                                                    tenantName,
+                                                                    versionNumber,
+                                                                    settings.CreateIfMissing,
+                                                                    out var requiresCreate,
+                                                                    out var requiresMove,
+                                                                    out var requiresMigration,
+                                                                    out toFileName);
 
                     if (!string.IsNullOrEmpty(fromFileName))
                     {
@@ -327,6 +331,7 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
                 else
                 {
                     message = $"Rule violation '{versionRule}'";
+                    action = ValuesFileAction.RuleViolation;
                 }
 
                 modifiedFiles.Add(new TenantValuesFileModification(environmentName, tenantName, action, fromFileName, toFileName, message));
@@ -564,9 +569,10 @@ public class UpdateImageCommand : AsyncCommand<UpdateImageCommand.Settings>
     public enum ValuesFileAction
     {
         None = 0,
-        Created = 1,
-        Moved = 2,
-        Modified = 4,
-        Errored = 8
+        RuleViolation = 1,
+        Created = 2,
+        Moved = 4,
+        Modified = 8,
+        Errored = 16
     }
 }
